@@ -21,6 +21,12 @@ pipeline {
         )
       }
     }
+stage('CI: Sonarqube quality check') {
+      when {branch 'feature'}
+      steps {
+      echo "sonar quality check is completed"
+      }
+    }
     stage('CI: Build OCI images') {
       steps {
         dir('kickstart-docker') {
@@ -32,6 +38,7 @@ pipeline {
       }
     }
     stage('CI: Bootstrap testing environment') {
+      when{ branch 'qa'}
       steps {
         dir('kickstart-docker') {
           sh "sudo docker compose -f compose/crm.yml --env-file compose/${TEST_ENVIRONMENT}.env -p sloopstash-${params.test_environment}-crm up -d"
@@ -40,6 +47,7 @@ pipeline {
       }
     }
     stage('CI: Execute test cases') {
+      when{ branch 'qa'}
       environment {
         APP_SOURCE='/opt/app/source'
       }
@@ -48,7 +56,7 @@ pipeline {
       }
       post {
         // always {
-        //   junit 'reports.xml'
+        //  junit 'reports.xml'
         // }
         success {
           input 'App testing has been successful. Do you want to proceed deployment in staging environment?'
@@ -56,8 +64,7 @@ pipeline {
       }
     }
     stage('CD: Bootstrap staging environment') {
-          when { branch 'develop' 
-        beforeAgent true}
+      when{ branch 'staging'}
       steps {
         dir('kickstart-ansible') {
           sh 'sudo docker compose -f docker/compose/crm.yml --env-file docker/compose/STG.env -p sloopstash-stg-crm up -d --scale app=3 --scale nginx=2'
@@ -65,8 +72,7 @@ pipeline {
       }
     }
     stage('CD: Execute deployment') {
-         when { branch 'develop' 
-        beforeAgent true}
+      when{ branch 'staging'}
       steps {
         dir('kickstart-ansible') {
           ansiblePlaybook(
@@ -98,25 +104,25 @@ pipeline {
       }
     }
   }
-  post {
+  // post {
     // always {
-    //   dir('kickstart-docker') {
-    //     sh "sudo docker compose -f compose/crm.yml --env-file compose/${TEST_ENVIRONMENT}.env -p sloopstash-${params.test_environment}-crm down"
-    //   }
-    //   dir('kickstart-ansible') {
-    //     sh 'sudo docker compose -f docker/compose/crm.yml --env-file docker/compose/STG.env -p sloopstash-stg-crm down'
-    //   }
-    //   emailext(
-    //     subject:'Jenkins: ${env.JOB_NAME} - ${currentBuild.currentResult}',
-    //     body:'${env.BUILD_NUMBER} ${env.JOB_NAME} execution ${currentBuild.currentResult}.\n Know more at ${env.BUILD_URL}.',
-    //     recipientProviders:[[$class:'DevelopersRecipientProvider'],[$class:'RequesterRecipientProvider']]
-    //   )
+    //  dir('kickstart-docker') {
+    //    sh "sudo docker compose -f compose/crm.yml --env-file compose/${TEST_ENVIRONMENT}.env -p sloopstash-${params.test_environment}-crm down"
+    //  }
+    //  dir('kickstart-ansible') {
+    //    sh 'sudo docker compose -f docker/compose/crm.yml --env-file docker/compose/STG.env -p sloopstash-stg-crm down'
+    //  }
+    //  emailext(
+    //    subject:'Jenkins: ${env.JOB_NAME} - ${currentBuild.currentResult}',
+    //    body:'${env.BUILD_NUMBER} ${env.JOB_NAME} execution ${currentBuild.currentResult}.\n Know more at ${env.BUILD_URL}.',
+    //    recipientProviders:[[$class:'DevelopersRecipientProvider'],[$class:'RequesterRecipientProvider']]
+    //  )
     // }
-    success {
-      cleanWs(
-        deleteDirs:true,
-        disableDeferredWipeout:true
-      )
-    }
-  }
+  //  success {
+  //    cleanWs(
+  //      deleteDirs:true,
+  //      disableDeferredWipeout:true
+  //    )
+  //  }
+  // }
 }
