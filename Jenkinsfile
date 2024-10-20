@@ -44,10 +44,9 @@ sudo docker compose -f docker/compose/crm.yml --env-file docker/compose/STG.env 
 
     stage('CD: Execute deployment') {
       steps {
-        sh 'cd kickstart-ansible'
-        ansiblePlaybook(playbook: 'playbook/redis.yml', credentialsId: 'ansible-node-ssh', inventory: 'inventory/stg', tags: 'setup,configure,stop,start')
-        ansiblePlaybook(playbook: 'playbook/crm/app.yml', credentialsId: 'ansible-node-ssh', inventory: 'inventory/stg', limit: 'sloopstash-stg-crm-app-1', tags: 'setup,update,configure,stop,start')
-        ansiblePlaybook(playbook: 'playbook/nginx.yml', credentialsId: 'ansible-node-ssh', inventory: 'inventory/stg', tags: 'setup,update,configure,stop,start')
+        ansiblePlaybook(playbook: 'kickstart-ansible/playbook/redis.yml', credentialsId: 'ansible-node-ssh', inventory: 'kickstart-ansible/inventory/stg', tags: 'setup,configure,stop,start')
+        ansiblePlaybook(playbook: 'kickstart-ansible/playbook/crm/app.yml', credentialsId: 'ansible-node-ssh', inventory: 'kickstart-ansible/inventory/stg', limit: 'sloopstash-stg-crm-app-1', tags: 'setup,update,configure,stop,start')
+        ansiblePlaybook(playbook: 'kickstart-ansible/playbook/nginx.yml', credentialsId: 'ansible-node-ssh', inventory: 'kickstart-ansible/inventory/stg', tags: 'setup,update,configure,stop,start')
         input 'Deployment has been successful. Do you want to proceed deployment in production environment?'
       }
     }
